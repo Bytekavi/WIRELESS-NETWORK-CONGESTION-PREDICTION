@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wireless Network Congestion Prediction | Real-Time Dynamic System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chart.js for real-time dynamic visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --success-light: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-light: #fffbeb;
+            --danger: #ef4444;
+            --danger-light: #fef2f2;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding-bottom: 50px;
+        }
+
+        /* Top Header */
+        header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 22px 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .header-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .status-active { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-fallback { background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+
+        .container {
+            max-width: 1240px;
+            margin: 24px auto 0 auto;
+            padding: 0 20px;
+        }
+
+        /* KPI Metric Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-main);
+        }
+
+        .kpi-icon {
+            font-size: 2rem;
+            opacity: 0.85;
+        }
+
+        /* Simulator Control Bar */
+        .sim-bar {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sim-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pulse-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #94a3b8;
+            transition: all 0.3s;
+        }
+
+        .pulse-running {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse-anim 1.5s infinite;
+        }
+
+        @keyframes pulse-anim {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .btn-stream {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-stream:hover { background: var(--primary-hover); }
+        .btn-pause { background: #64748b; }
+        .btn-pause:hover { background: #475569; }
+
+        .btn-step {
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-step:hover { background: #e2e8f0; }
+
+        /* Real-time Dynamic Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 960px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Standard Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h2, .card-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body { padding: 20px; }
+
+        /* Dashboard Main Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Preset Buttons */
+        .presets-bar {
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: var(--radius-md);
+        }
+
+        .presets-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-preset {
+            border: 1px solid var(--border);
+            background: #ffffff;
+            color: var(--text-main);
+            padding: 6px 11px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-preset:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        /* Form elements */
+        .form-group { margin-bottom: 18px; }
+        .form-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .form-label { font-size: 0.88rem; font-weight: 600; }
+        .form-subtext { font-size: 0.75rem; color: var(--text-muted); }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 0.92rem;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: #ffffff;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .slider-control {
+            width: 100%;
+            margin-top: 6px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .btn-primary {
+            flex: 2;
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 11px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-secondary {
+            flex: 1;
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 11px 14px;
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        /* Prediction Badge */
+        .prediction-badge-container {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 18px;
+            border-radius: var(--radius-md);
+            background: #f8fafc;
+            border: 1px solid var(--border);
+        }
+
+        .prediction-class {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+        .badge-low { color: var(--success); }
+        .badge-medium { color: var(--warning); }
+        .badge-high { color: var(--danger); }
+
+        /* Probabilities */
+        .prob-bar-track {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .prob-bar-fill { height: 100%; border-radius: 9999px; }
+        .prob-bar-fill.fill-low { background-color: var(--success); }
+        .prob-bar-fill.fill-medium { background-color: var(--warning); }
+        .prob-bar-fill.fill-high { background-color: var(--danger); }
+
+        /* Alerts Ticker */
+        .alert-item {
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.84rem;
+        }
+        .alert-critical { background: #fee2e2; border-left: 4px solid var(--danger); color: #991b1b; }
+        .alert-warning { background: #fef3c7; border-left: 4px solid var(--warning); color: #92400e; }
+        .btn-ack {
+            background: none;
+            border: 1px solid currentColor;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: inherit;
+        }
+
+        /* Database Table */
+        .db-table-container { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+        th {
+            background: #f8fafc;
+            padding: 10px 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+        }
+        tr:hover td { background-color: #f8fafc; }
+        .badge-pill {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+        }
+        .badge-pill-low { background: #dcfce7; color: #15803d; }
+        .badge-pill-medium { background: #fef3c7; color: #b45309; }
+        .badge-pill-high { background: #fee2e2; color: #b91c1c; }
+
+        /* Tabs */
+        .tabs-header {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 16px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content { display: none; padding-top: 16px; }
+        .tab-content.active { display: block; }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="header-container">
+            <div>
+                <h1 style="font-size: 1.45rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <span>📶</span> Wireless Network Congestion Prediction
+                </h1>
+                <p style="font-size: 0.85rem; color: #94a3b8;">Full-Stack Real-Time Dynamic System &middot; SQLite Persistent Database</p>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">📊 Live Dashboard</a>
+                <a href="/history" class="nav-link">📋 Database Logs</a>
+                <a href="/stations" class="nav-link">🏢 Base Stations</a>
+                <a href="/api/export-csv" class="nav-link" style="color: #6ee7b7;">📥 Export CSV</a>
+                <div class="status-pill">
+                    <span class="status-dot {% if is_ml_model_loaded %}status-active{% else %}status-fallback{% endif %}"></span>
+                    <span>{{ active_model_name }}</span>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Error Alert -->
+        {% if error %}
+            <div style="background:#fee2e2; border-left:4px solid #ef4444; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:20px;">
+                <strong>Validation Error:</strong> {{ error }}
+            </div>
+        {% endif %}
+
+        <!-- Real Database KPI Counter Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div>
+                    <div class="kpi-title">Database Records</div>
+                    <div class="kpi-value" id="kpi-total-records">{{ db_stats.total_records }}</div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Stored in SQLite</span>
+                </div>
+                <div class="kpi-icon">💾</div>
+            </div>
+
+            <div class="kpi-card">
+                <div>
+                    <div class="kpi-title">Active Alerts</div>
+                    <div class="kpi-value" id="kpi-active-alerts" style="color: {% if db_stats.active_alerts_count > 0 %}var(--danger){% else %}var(--success){% endif %};">
+                        {{ db_stats.active_alerts_count }}
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Unacknowledged</span>
+                </div>
+                <div class="kpi-icon">🚨</div>
+            </div>
+
+            <div class="kpi-card">
+                <div>
+                    <div class="kpi-title">Avg Network Load</div>
+                    <div class="kpi-value" id="kpi-avg-load">{{ db_stats.averages.load_pct }}%</div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Across all cells</span>
+                </div>
+                <div class="kpi-icon">📈</div>
+            </div>
+
+            <div class="kpi-card">
+                <div>
+                    <div class="kpi-title">Avg Latency</div>
+                    <div class="kpi-value" id="kpi-avg-latency">{{ db_stats.averages.latency_ms }} ms</div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Round-trip time</span>
+                </div>
+                <div class="kpi-icon">⏱️</div>
+            </div>
+        </div>
+
+        <!-- Real-Time Stream Simulator Control Bar -->
+        <div class="sim-bar">
+            <div class="sim-info">
+                <div class="pulse-indicator" id="pulse-dot"></div>
+                <div>
+                    <strong style="font-size: 0.92rem;">Real-Time Telemetry Stream</strong>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);" id="stream-status-text">
+                        Simulator idle. Click start to stream live wireless telemetry to database.
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-stream" id="btn-toggle-stream" onclick="toggleStream()">
+                    <span>▶</span> Start Real-Time Stream
+                </button>
+                <button type="button" class="btn-step" onclick="simulateStep()">
+                    <span>⚡</span> Inject 1 Packet
+                </button>
+            </div>
+        </div>
+
+        <!-- Real-Time Dynamic Charts Grid -->
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span>📈</span> Live Network Dynamics (Latency & Throughput)</h3>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Auto-updating from SQLite</span>
+                </div>
+                <div class="card-body">
+                    <canvas id="timeseriesChart" height="130"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><span>🥧</span> Congestion Distribution</h3>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Database Totals</span>
+                </div>
+                <div class="card-body">
+                    <canvas id="doughnutChart" height="130"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Interactive Layout Grid -->
+        <div class="dashboard-grid">
+
+            <!-- Telemetry Input Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><span>📊</span> Telemetry Ingestion Form</h2>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Logs directly to database</span>
+                </div>
+                <div class="card-body">
+
+                    <!-- Presets -->
+                    <div class="presets-bar">
+                        <span class="presets-label">⚡ Test Presets (One-Click Scenarios)</span>
+                        <div class="preset-buttons">
+                            <button type="button" class="btn-preset" onclick="setPreset(22, 90, 18, 0.2)">
+                                🟢 Low (Off-Peak)
+                            </button>
+                            <button type="button" class="btn-preset" onclick="setPreset(58, 38, 65, 2.2)">
+                                🟡 Medium (Office)
+                            </button>
+                            <button type="button" class="btn-preset" onclick="setPreset(88, 8, 190, 8.5)">
+                                🔴 High (Rush Hour)
+                            </button>
+                            <button type="button" class="btn-preset" onclick="setPreset(74, 22, 98, 4.8)">
+                                ⚠️ Edge Boundary
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Input Form -->
+                    <form method="POST" action="/" id="telemetryForm">
+
+                        <!-- Base Station Select -->
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label for="cell_id" class="form-label">Target Base Station Node</label>
+                                <span class="form-subtext">Registered Cell</span>
+                            </div>
+                            <select name="cell_id" id="cell_id" class="form-input">
+                                {% for station in base_stations %}
+                                    <option value="{{ station.cell_id }}" {% if form_values.cell_id == station.cell_id %}selected{% endif %}>
+                                        {{ station.cell_id }} &mdash; {{ station.name }} ({{ station.technology }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Feature 1: Load -->
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label for="network_load_pct" class="form-label">Network Load</label>
+                                <span class="form-subtext">Range: 0 &ndash; 100%</span>
+                            </div>
+                            <input type="number" step="0.1" min="0" max="100" class="form-input" 
+                                   id="network_load_pct" name="network_load_pct" 
+                                   value="{{ form_values.network_load_pct }}" required>
+                            <input type="range" min="0" max="100" step="0.5" class="slider-control"
+                                   id="slider_load" value="{{ form_values.network_load_pct }}"
+                                   oninput="syncSlider('slider_load', 'network_load_pct')">
+                        </div>
+
+                        <!-- Feature 2: Throughput -->
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label for="throughput_mbps" class="form-label">Observed Throughput</label>
+                                <span class="form-subtext">Mbps (&ge; 0)</span>
+                            </div>
+                            <input type="number" step="0.1" min="0" class="form-input" 
+                                   id="throughput_mbps" name="throughput_mbps" 
+                                   value="{{ form_values.throughput_mbps }}" required>
+                            <input type="range" min="0" max="150" step="0.5" class="slider-control"
+                                   id="slider_tp" value="{{ form_values.throughput_mbps }}"
+                                   oninput="syncSlider('slider_tp', 'throughput_mbps')">
+                        </div>
+
+                        <!-- Feature 3: Latency -->
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label for="latency_ms" class="form-label">Latency / Round-Trip Delay</label>
+                                <span class="form-subtext">ms (&ge; 0)</span>
+                            </div>
+                            <input type="number" step="0.1" min="0" class="form-input" 
+                                   id="latency_ms" name="latency_ms" 
+                                   value="{{ form_values.latency_ms }}" required>
+                            <input type="range" min="0" max="350" step="1" class="slider-control"
+                                   id="slider_lat" value="{{ form_values.latency_ms }}"
+                                   oninput="syncSlider('slider_lat', 'latency_ms')">
+                        </div>
+
+                        <!-- Feature 4: Loss -->
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label for="packet_loss_pct" class="form-label">Packet Loss Rate</label>
+                                <span class="form-subtext">Range: 0 &ndash; 100%</span>
+                            </div>
+                            <input type="number" step="0.05" min="0" max="100" class="form-input" 
+                                   id="packet_loss_pct" name="packet_loss_pct" 
+                                   value="{{ form_values.packet_loss_pct }}" required>
+                            <input type="range" min="0" max="25" step="0.1" class="slider-control"
+                                   id="slider_loss" value="{{ form_values.packet_loss_pct }}"
+                                   oninput="syncSlider('slider_loss', 'packet_loss_pct')">
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn-primary">
+                                <span>🎯</span> Run Prediction & Save to DB
+                            </button>
+                            <a href="/" class="btn-secondary">Reset</a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- Prediction Results & Alert Column -->
+            <div>
+                <!-- Prediction Result Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><span>🧭</span> Prediction Analysis</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);" id="prediction-record-tag">
+                            {% if prediction_result and prediction_result.database_record_id %}
+                                Stored in DB #{{ prediction_result.database_record_id }}
+                            {% else %}
+                                Real-Time Inference
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="card-body" id="prediction-card-body">
+                        {% if prediction_result %}
+                            <div class="prediction-badge-container">
+                                <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">
+                                    Predicted Congestion Level
+                                </div>
+                                <div class="prediction-class {{ prediction_result.recommendation.badge_class }}">
+                                    {{ prediction_result.prediction }}
+                                </div>
+                                <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+                                    {{ prediction_result.source }}
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; margin-bottom: 6px;">
+                                    <span>Model Confidence</span>
+                                    <span>{{ prediction_result.confidence }}%</span>
+                                </div>
+
+                                {% for cls_name in ["Low", "Medium", "High"] %}
+                                    {% set prob_val = prediction_result.probabilities.get(cls_name, 0.0) %}
+                                    {% set prob_pct = (prob_val * 100) | round(1) %}
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 2px;">
+                                        <span>{{ cls_name }}</span>
+                                        <span>{{ prob_pct }}%</span>
+                                    </div>
+                                    <div class="prob-bar-track">
+                                        <div class="prob-bar-fill fill-{{ cls_name | lower }}" style="width: {{ prob_pct }}%;"></div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <div style="background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: var(--radius-md);">
+                                <h4 style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">💡 QoS Engineering Response</h4>
+                                <p style="font-size: 0.82rem; color: var(--text-muted);">{{ prediction_result.recommendation.action }}</p>
+                            </div>
+                        {% else %}
+                            <div style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+                                <div style="font-size: 2.5rem; margin-bottom: 10px;">📡</div>
+                                <h4 style="font-size: 1rem; font-weight: 600;">Ready for Telemetry Evaluation</h4>
+                                <p style="font-size: 0.84rem;">Submit inputs or use a preset to classify congestion and save to SQLite.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Active Congestion Alerts Panel -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><span>🚨</span> Live Alert Center</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);" id="alert-counter-badge">
+                            {{ active_alerts|length }} Active
+                        </span>
+                    </div>
+                    <div class="card-body" id="alerts-container">
+                        {% if active_alerts %}
+                            {% for alert in active_alerts %}
+                                <div class="alert-item alert-{{ alert.severity | lower }}" id="alert-item-{{ alert.id }}">
+                                    <div>
+                                        <strong>{{ alert.cell_id }} &middot; {{ alert.severity }}</strong><br>
+                                        <span style="font-size: 0.78rem;">{{ alert.message }}</span>
+                                    </div>
+                                    <button class="btn-ack" onclick="acknowledgeAlert({{ alert.id }})">Acknowledge</button>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 12px;" id="no-alerts-msg">
+                                ✅ No active alerts. All cells operating within normal thresholds.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Real Database Telemetry Feed Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2><span>📋</span> Live Database Telemetry Feed (Recent Records)</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <a href="/history" style="font-size: 0.85rem; color: var(--primary); text-decoration: none; font-weight: 600;">
+                        View All in Database &rarr;
+                    </a>
+                </div>
+            </div>
+            <div class="db-table-container">
+                <table id="recent-telemetry-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Time</th>
+                            <th>Base Station</th>
+                            <th>Load</th>
+                            <th>Throughput</th>
+                            <th>Latency</th>
+                            <th>Loss</th>
+                            <th>Predicted Congestion</th>
+                            <th>Confidence</th>
+                            <th>Model</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="telemetry-tbody">
+                        {% if recent_logs %}
+                            {% for log in recent_logs %}
+                                <tr id="row-{{ log.id }}">
+                                    <td>#{{ log.id }}</td>
+                                    <td>{{ log.timestamp }}</td>
+                                    <td>
+                                        <strong>{{ log.cell_id }}</strong><br>
+                                        <span style="font-size: 0.72rem; color: var(--text-muted); font-family: 'Inter', sans-serif;">
+                                            {{ log.cell_name or 'Station' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.network_load_pct }}%</td>
+                                    <td>{{ log.throughput_mbps }} Mbps</td>
+                                    <td>{{ log.latency_ms }} ms</td>
+                                    <td>{{ log.packet_loss_pct }}%</td>
+                                    <td>
+                                        <span class="badge-pill badge-pill-{{ log.predicted_congestion | lower }}">
+                                            {{ log.predicted_congestion }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.confidence_pct }}%</td>
+                                    <td style="font-family: 'Inter', sans-serif; font-size: 0.78rem;">{{ log.model_used }}</td>
+                                    <td>
+                                        <button onclick="deleteRecord({{ log.id }})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.75rem;">
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr id="no-telemetry-row">
+                                <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                    No database records yet. Start streaming or submit telemetry above.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Academic Evaluation Tabs Section -->
+        <div class="card" style="margin-top: 30px;">
+            <div class="card-header" style="border-bottom: none; padding-bottom: 0;">
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="switchTab(event, 'tab-comparison')">
+                        📊 Algorithm Benchmark
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-matrix')">
+                        🎯 Confusion Matrix
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-importance')">
+                        📈 Feature Importance
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tab-arch')">
+                        🏛️ Architecture & Standards
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+
+                <!-- Tab 1: Comparison -->
+                <div id="tab-comparison" class="tab-content active">
+                    <div style="overflow-x: auto;">
+                        <table style="font-family: 'Inter', sans-serif;">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th>Test Accuracy</th>
+                                    <th>Macro Precision</th>
+                                    <th>Macro Recall</th>
+                                    <th>Macro F1</th>
+                                    <th>Weighted F1</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in comparison_data %}
+                                    <tr style="{% if row.Algorithm == active_model_name %}background-color: #f0fdf4; font-weight:600;{% endif %}">
+                                        <td>
+                                            {{ row.Algorithm }}
+                                            {% if row.Algorithm == active_model_name %}
+                                                <span style="background:var(--success); color:#fff; font-size:0.7rem; padding:2px 7px; border-radius:9999px; margin-left:6px;">
+                                                    Active Model
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td><strong>{{ row.Accuracy_pct }}%</strong></td>
+                                        <td>{{ row.Precision_Macro }}</td>
+                                        <td>{{ row.Recall_Macro }}</td>
+                                        <td>{{ row.F1_Macro }}</td>
+                                        <td>{{ row.F1_Weighted }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Confusion Matrix -->
+                <div id="tab-matrix" class="tab-content">
+                    {% if metadata and metadata.confusion_matrices and metadata.confusion_matrices.get(active_model_name) %}
+                        {% set cm = metadata.confusion_matrices.get(active_model_name) %}
+                        <div style="display: flex; justify-content: center; padding: 10px 0;">
+                            <table style="max-width: 450px; text-align: center; border: 1px solid var(--border);">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2" style="background:#f1f5f9;">Actual \ Predicted</th>
+                                        <th colspan="3">Predicted Congestion Level</th>
+                                    </tr>
+                                    <tr>
+                                        <th>Low</th>
+                                        <th>Medium</th>
+                                        <th>High</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row_idx in range(3) %}
+                                        <tr>
+                                            <th>{{ ["Low", "Medium", "High"][row_idx] }}</th>
+                                            {% for col_idx in range(3) %}
+                                                <td style="{% if row_idx == col_idx %}background:#ecfdf5; font-weight:700; color:#065f46;{% else %}background:#fff; color:#64748b;{% endif %}">
+                                                    {{ cm[row_idx][col_idx] }}
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tab 3: Feature Importance -->
+                <div id="tab-importance" class="tab-content">
+                    {% if metadata and metadata.comparison %}
+                        {% for item in metadata.comparison %}
+                            {% if item.Algorithm == active_model_name and item.Feature_Importances %}
+                                {% for feat, val in item.Feature_Importances.items() %}
+                                    {% set pct = (val * 100) | round(1) %}
+                                    <div style="margin-bottom: 12px;">
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 3px;">
+                                            <span>{{ feat }}</span>
+                                            <span>{{ pct }}% importance</span>
+                                        </div>
+                                        <div class="prob-bar-track">
+                                            <div class="prob-bar-fill" style="background-color: var(--primary); width: {{ pct }}%;"></div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Tab 4: Architecture -->
+                <div id="tab-arch" class="tab-content">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+                        <strong>Dynamic System Architecture:</strong> Ingests wireless telemetry, processes missing values via a median imputer pipeline, infers congestion severity using the trained Random Forest classifier, logs every event into SQLite database, and emits QoS alerts into the incident center.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <footer>
+            Wireless Network Congestion Prediction System &middot; Real-Time Dynamic Website with SQLite Database
+        </footer>
+
+    </div>
+
+    <!-- Dynamic JavaScript & Real-time Chart.js Setup -->
+    <script>
+        // Synchronize numeric input and slider
+        function syncSlider(sliderId, inputId) {
+            document.getElementById(inputId).value = document.getElementById(sliderId).value;
+        }
+
+        ['network_load_pct', 'throughput_mbps', 'latency_ms', 'packet_loss_pct'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', function() {
+                    let sId = 'slider_load';
+                    if (id === 'throughput_mbps') sId = 'slider_tp';
+                    if (id === 'latency_ms') sId = 'slider_lat';
+                    if (id === 'packet_loss_pct') sId = 'slider_loss';
+                    const slider = document.getElementById(sId);
+                    if (slider) slider.value = this.value;
+                });
+            }
+        });
+
+        // Set preset
+        function setPreset(load, tp, lat, loss) {
+            document.getElementById('network_load_pct').value = load;
+            document.getElementById('slider_load').value = load;
+            document.getElementById('throughput_mbps').value = tp;
+            document.getElementById('slider_tp').value = tp;
+            document.getElementById('latency_ms').value = lat;
+            document.getElementById('slider_lat').value = lat;
+            document.getElementById('packet_loss_pct').value = loss;
+            document.getElementById('slider_loss').value = loss;
+        }
+
+        // Tab Switching
+        function switchTab(evt, tabId) {
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) tabContents[i].classList.remove('active');
+            const tabButtons = document.getElementsByClassName('tab-btn');
+            for (let i = 0; i < tabButtons.length; i++) tabButtons[i].classList.remove('active');
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // =====================================================================
+        // Real-Time Chart.js Initialization
+        // =====================================================================
+        let timeseriesChart = null;
+        let doughnutChart = null;
+
+        function initCharts() {
+            // Line chart for Latency & Throughput
+            const ctxLine = document.getElementById('timeseriesChart').getContext('2d');
+            timeseriesChart = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Latency (ms)',
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            data: [],
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Throughput (Mbps)',
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            data: [],
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Latency (ms)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'Throughput (Mbps)' }
+                        }
+                    }
+                }
+            });
+
+            // Doughnut chart for Congestion Distribution
+            const ctxPie = document.getElementById('doughnutChart').getContext('2d');
+            doughnutChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low Congestion', 'Medium Congestion', 'High Congestion'],
+                    datasets: [{
+                        data: [
+                            {{ db_stats.class_counts.Low }},
+                            {{ db_stats.class_counts.Medium }},
+                            {{ db_stats.class_counts.High }}
+                        ],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Initial fetch to populate timeseries
+            updateDashboardData();
+        }
+
+        // =====================================================================
+        // Dynamic Live Polling & Data Updates
+        // =====================================================================
+        function updateDashboardData() {
+            fetch('/api/live-data')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) return;
+
+                    // 1. Update KPI counter cards
+                    document.getElementById('kpi-total-records').innerText = data.statistics.total_records;
+                    document.getElementById('kpi-active-alerts').innerText = data.statistics.active_alerts_count;
+                    document.getElementById('kpi-avg-load').innerText = data.statistics.averages.load_pct + '%';
+                    document.getElementById('kpi-avg-latency').innerText = data.statistics.averages.latency_ms + ' ms';
+
+                    // 2. Update Timeseries Chart
+                    if (timeseriesChart && data.timeseries) {
+                        timeseriesChart.data.labels = data.timeseries.map(d => d.time_label || ('#' + d.id));
+                        timeseriesChart.data.datasets[0].data = data.timeseries.map(d => d.latency_ms);
+                        timeseriesChart.data.datasets[1].data = data.timeseries.map(d => d.throughput_mbps);
+                        timeseriesChart.update('none');
+                    }
+
+                    // 3. Update Doughnut Chart
+                    if (doughnutChart && data.statistics.class_counts) {
+                        doughnutChart.data.datasets[0].data = [
+                            data.statistics.class_counts.Low,
+                            data.statistics.class_counts.Medium,
+                            data.statistics.class_counts.High
+                        ];
+                        doughnutChart.update('none');
+                    }
+
+                    // 4. Update Recent Telemetry Table
+                    if (data.recent_logs && data.recent_logs.length > 0) {
+                        const tbody = document.getElementById('telemetry-tbody');
+                        let html = '';
+                        data.recent_logs.forEach(log => {
+                            html += `
+                            <tr id="row-${log.id}">
+                                <td>#${log.id}</td>
+                                <td>${log.timestamp}</td>
+                                <td>
+                                    <strong>${log.cell_id}</strong><br>
+                                    <span style="font-size:0.72rem; color:var(--text-muted); font-family:'Inter', sans-serif;">
+                                        ${log.cell_name || 'Station'}
+                                    </span>
+                                </td>
+                                <td>${log.network_load_pct}%</td>
+                                <td>${log.throughput_mbps} Mbps</td>
+                                <td>${log.latency_ms} ms</td>
+                                <td>${log.packet_loss_pct}%</td>
+                                <td>
+                                    <span class="badge-pill badge-pill-${log.predicted_congestion.toLowerCase()}">
+                                        ${log.predicted_congestion}
+                                    </span>
+                                </td>
+                                <td>${log.confidence_pct}%</td>
+                                <td style="font-family:'Inter', sans-serif; font-size:0.78rem;">${log.model_used}</td>
+                                <td>
+                                    <button onclick="deleteRecord(${log.id})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.75rem;">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                            `;
+                        });
+                        tbody.innerHTML = html;
+                    }
+
+                    // 5. Update Alerts List
+                    const alertsContainer = document.getElementById('alerts-container');
+                    const counterBadge = document.getElementById('alert-counter-badge');
+                    if (counterBadge) counterBadge.innerText = (data.active_alerts.length) + ' Active';
+
+                    if (data.active_alerts.length > 0) {
+                        let alertHtml = '';
+                        data.active_alerts.forEach(alert => {
+                            alertHtml += `
+                            <div class="alert-item alert-${alert.severity.toLowerCase()}" id="alert-item-${alert.id}">
+                                <div>
+                                    <strong>${alert.cell_id} &middot; ${alert.severity}</strong><br>
+                                    <span style="font-size:0.78rem;">${alert.message}</span>
+                                </div>
+                                <button class="btn-ack" onclick="acknowledgeAlert(${alert.id})">Acknowledge</button>
+                            </div>
+                            `;
+                        });
+                        alertsContainer.innerHTML = alertHtml;
+                    } else {
+                        alertsContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:12px;">✅ No active alerts. All cells operating within normal thresholds.</div>';
+                    }
+                })
+                .catch(err => console.error("Error fetching live data:", err));
+        }
+
+        // =====================================================================
+        // Real-Time Telemetry Stream Simulation Loop
+        // =====================================================================
+        let streamInterval = null;
+
+        function toggleStream() {
+            const btn = document.getElementById('btn-toggle-stream');
+            const dot = document.getElementById('pulse-dot');
+            const statusText = document.getElementById('stream-status-text');
+
+            if (streamInterval === null) {
+                // Start stream
+                streamInterval = setInterval(simulateStep, 2600);
+                btn.innerHTML = '<span>⏸</span> Pause Real-Time Stream';
+                btn.classList.add('btn-pause');
+                dot.classList.add('pulse-running');
+                statusText.innerText = '🔴 Live streaming active: Generating wireless telemetry every 2.6s to SQLite.';
+                simulateStep(); // Trigger initial immediate step
+            } else {
+                // Stop stream
+                clearInterval(streamInterval);
+                streamInterval = null;
+                btn.innerHTML = '<span>▶</span> Start Real-Time Stream';
+                btn.classList.remove('btn-pause');
+                dot.classList.remove('pulse-running');
+                statusText.innerText = 'Simulator paused. Click start to resume streaming.';
+            }
+        }
+
+        function simulateStep() {
+            fetch('/api/telemetry/simulate-step', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        updateDashboardData();
+                    }
+                })
+                .catch(err => console.error("Simulation error:", err));
+        }
+
+        // Acknowledge alert
+        function acknowledgeAlert(alertId) {
+            fetch('/api/alerts/' + alertId + '/acknowledge', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const item = document.getElementById('alert-item-' + alertId);
+                        if (item) item.remove();
+                        updateDashboardData();
+                    }
+                });
+        }
+
+        // Delete single record
+        function deleteRecord(recordId) {
+            if (!confirm('Delete telemetry record #' + recordId + ' from database?')) return;
+            fetch('/api/telemetry/' + recordId + '/delete', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const row = document.getElementById('row-' + recordId);
+                        if (row) row.remove();
+                        updateDashboardData();
+                    }
+                });
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+        });
+    </script>
+</body>
+</html>

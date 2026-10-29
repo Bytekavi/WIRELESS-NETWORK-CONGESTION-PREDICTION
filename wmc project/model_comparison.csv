@@ -1,0 +1,4 @@
+Algorithm,Accuracy,Accuracy_pct,Precision_Macro,Recall_Macro,F1_Macro,F1_Weighted
+Decision Tree,0.9933,99.33,0.9937,0.9934,0.9935,0.9933
+Random Forest,0.9983,99.83,0.9984,0.9984,0.9984,0.9983
+Gradient Boosting,0.995,99.5,0.9952,0.9952,0.9952,0.995

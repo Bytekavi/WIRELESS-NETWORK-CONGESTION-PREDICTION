@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base Stations Directory | Wireless Congestion System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding-bottom: 50px;
+        }
+        header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            padding: 20px 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .header-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .nav-links { display: flex; gap: 12px; }
+        .nav-link {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .container {
+            max-width: 1240px;
+            margin: 28px auto 0 auto;
+            padding: 0 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 24px;
+        }
+        @media (max-width: 860px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-header h2 { font-size: 1.15rem; font-weight: 700; }
+        .card-body { padding: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 9px 12px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .btn-submit {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-submit:hover { background: var(--primary-hover); }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.88rem;
+        }
+        .alert-success { background: #dcfce7; color: #166534; }
+        .alert-danger { background: #fee2e2; color: #991b1b; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+        th {
+            background: #f1f5f9;
+            padding: 12px 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .badge-status {
+            background: #dcfce7;
+            color: #166534;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .badge-tech {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div>
+                <h1 style="font-size: 1.4rem; font-weight: 700;">🏢 Radio Access Network Base Stations</h1>
+                <p style="font-size: 0.85rem; color: #94a3b8;">Base Station Nodes Database Directory &middot; SQLite Persistent Registry</p>
+            </div>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">📊 Live Dashboard</a>
+                <a href="/history" class="nav-link">📋 Database Logs</a>
+                <a href="/stations" class="nav-link active">🏢 Base Stations</a>
+                <a href="/api/export-csv" class="nav-link" style="color: #6ee7b7;">📥 Export CSV</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        {% if message %}
+            <div class="alert alert-{{ msg_type }}">
+                {{ message }}
+            </div>
+        {% endif %}
+
+        <div class="grid">
+            <!-- Add Station Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Add Base Station Node</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="/stations">
+                        <div class="form-group">
+                            <label class="form-label">Cell ID (Identifier)</label>
+                            <input type="text" name="cell_id" class="form-input" placeholder="e.g. BS-106-Airport" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Station Name / Facility</label>
+                            <input type="text" name="name" class="form-input" placeholder="e.g. International Terminal Tower" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Geographic Location</label>
+                            <input type="text" name="location" class="form-input" placeholder="e.g. North Terminal Sector 3" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Radio Frequency Band</label>
+                            <input type="text" name="frequency_band" class="form-input" placeholder="e.g. 3.7 GHz (C-Band)" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Radio Technology</label>
+                            <select name="technology" class="form-input">
+                                <option value="5G NR" selected>5G NR (New Radio)</option>
+                                <option value="4G LTE">4G LTE (Long-Term Evolution)</option>
+                                <option value="Wi-Fi 6">Wi-Fi 6 (802.11ax WLAN)</option>
+                                <option value="5G Advanced">5G Advanced / Private 5G</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-submit">Register Base Station in Database</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- List Stations -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Registered Base Stations ({{ stations|length }})</h2>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cell ID</th>
+                                <th>Name & Location</th>
+                                <th>Tech & Band</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for station in stations %}
+                                <tr>
+                                    <td>
+                                        <strong style="font-family: 'JetBrains Mono', monospace;">{{ station.cell_id }}</strong>
+                                    </td>
+                                    <td>
+                                        <strong>{{ station.name }}</strong><br>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ station.location }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-tech">{{ station.technology }}</span><br>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                                            {{ station.frequency_band }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-status">{{ station.status }}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
